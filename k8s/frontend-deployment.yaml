@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: durgaprasad147/frontend_backend:frontend
+          image: nareshgundavelli/simple-react:frontend
           ports:
             - containerPort: 5173
 
