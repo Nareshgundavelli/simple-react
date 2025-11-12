@@ -16,7 +16,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    sh 'docker build -t $IMAGE_NAME:backend .'
+                    sh 'docker build -t $IMAGE_NAME -f backend/Dockerfile ./backend'
                 }
             }
         }
@@ -35,7 +35,7 @@ pipeline {
         stage('Push to Docker Hub') {
             steps {
                 script {
-                    sh 'docker push $IMAGE_NAME:backend'
+                    sh 'docker push $IMAGE_NAME'
                 }
             }
         }
