@@ -1,5 +1,15 @@
 pipeline {
   agent any
+  
+  environment {
+    FRONTEND_SERVICE = 'frontend'
+    BACKEND_SERVICE  = 'backend'
+    DOCKER_REPO      = 'nareshgundavelli/simple-react'
+    DOCKER_CRED_ID   = 'dockerhub-credentials'
+    APP_VERSION      = '1.0.0' // temporary, override if needed
+    FRONTEND_CHANGED = 'true'
+    BACKEND_CHANGED  = 'true'
+  }
 
   stages {
     stage('Checkout Source') {
@@ -33,14 +43,39 @@ pipeline {
         }
       }
     }
+  
+
+
+
+    stage('Build & Push Docker Images') {
+      steps {
+        script {
+          withCredentials([usernamePassword(credentialsId: env.DOCKER_CRED_ID, usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+            sh '''
+              echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+
+              if [ "${FRONTEND_CHANGED}" = "true" ]; then
+                echo "🚀 Building Frontend image..."
+                docker build -t ${DOCKER_REPO}:frontend-${APP_VERSION} ./frontend
+                docker push ${DOCKER_REPO}:frontend-${APP_VERSION}
+              fi
+
+              if [ "${BACKEND_CHANGED}" = "true" ]; then
+                echo "🚀 Building Backend image..."
+                docker build -t ${DOCKER_REPO}:backend-${APP_VERSION} ./backend
+                docker push ${DOCKER_REPO}:backend-${APP_VERSION}
+              fi
+
+              docker logout
+            '''
+          }
+        }
+      }
+    }
   }
 
   post {
-    success {
-      echo "✅ Change detection & version reading completed successfully."
-    }
-    failure {
-      echo "❌ Pipeline failed during execution."
-    }
+    success { echo "✅ Docker images built and pushed." }
+    failure { echo "❌ Docker build stage failed." }
   }
 }
