@@ -105,11 +105,8 @@ pipeline {
         }
       }
     }
-  
-
-
     stage('Trigger ArgoCD Sync') {
-  steps {
+   steps {
     script {
       withCredentials([string(credentialsId: 'argocd-token', variable: 'ARGO_TOKEN')]) {
         sh '''
@@ -133,11 +130,14 @@ pipeline {
       }
     }
   }
-
-
- post {
+}
+  }
+  post {
   success { echo "✅ ArgoCD sync completed." }
   failure { echo "❌ ArgoCD sync failed." }
- }
-
 }
+}
+
+
+
+    
