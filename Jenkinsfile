@@ -111,7 +111,7 @@ pipeline {
     stage('Trigger ArgoCD Sync') {
       steps {
         script {
-          withCredentials([string(credentialsId: env.ARGOCD_TOKEN_ID, variable: 'ARGO_TOKEN')]) {
+          withCredentials([string(credentialsId: 'argocd-token', variable: 'ARGO_TOKEN')]) {
             sh """
               echo "🚀 Triggering ArgoCD sync for ${ARGOCD_APP_NAME}..."
               argocd login ${ARGOCD_SERVER} --grpc-web --username admin --password "${ARGO_TOKEN}" --insecure || true
