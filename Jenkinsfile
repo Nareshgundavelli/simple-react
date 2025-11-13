@@ -13,9 +13,9 @@ pipeline {
     GIT_CRED_ID      = 'git_access_cred'
     GIT_USER_NAME    = 'Nareshgundavelli'
     GIT_USER_EMAIL   = 'nareshgundavelli09@gmail.com'
-    ARGOCD_SERVER   = 'argocd.example.com'
+    ARGOCD_SERVER   = 'https://192.168.49.2:30587'
     ARGOCD_APP_NAME = 'simple-react'
-    ARGOCD_TOKEN_ID = 'argocd-token'
+    ARGOCD_TOKEN_ID = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJhcmdvY2QiLCJzdWIiOiJhZG1pbjphcGlLZXkiLCJuYmYiOjE3NjMwMjY0MzIsImlhdCI6MTc2MzAyNjQzMiwianRpIjoiZDQxMTU5ZjQtOWJlNC00YjE5LWJmNTYtZjkxYmU2MTg0MzNjIn0.kaLidRQoAbjZJaeyNpyh2P77vtXV3kEIZkwFFyGysdo'
   }
 
   stages {
