@@ -13,6 +13,9 @@ pipeline {
     GIT_CRED_ID      = 'git_access_cred'
     GIT_USER_NAME    = 'Nareshgundavelli'
     GIT_USER_EMAIL   = 'nareshgundavelli09@gmail.com'
+    ARGOCD_SERVER   = 'argocd.example.com'
+    ARGOCD_APP_NAME = 'simple-react'
+    ARGOCD_TOKEN_ID = 'argocd-token'
   }
 
   stages {
@@ -102,10 +105,27 @@ pipeline {
         }
       }
     }
+  
+
+
+    stage('Trigger ArgoCD Sync') {
+      steps {
+        script {
+          withCredentials([string(credentialsId: env.ARGOCD_TOKEN_ID, variable: 'ARGO_TOKEN')]) {
+            sh """
+              echo "🚀 Triggering ArgoCD sync for ${ARGOCD_APP_NAME}..."
+              argocd login ${ARGOCD_SERVER} --grpc-web --username admin --password "${ARGO_TOKEN}" --insecure || true
+              argocd app sync ${ARGOCD_APP_NAME} --server ${ARGOCD_SERVER} || true
+              argocd app wait ${ARGOCD_APP_NAME} --server ${ARGOCD_SERVER} --health --timeout 300
+            """
+          }
+        }
+      }
+    }
   }
 
   post {
-    success { echo "✅ Kubernetes manifests updated." }
-    failure { echo "❌ K8s manifest update failed." }
+    success { echo "✅ ArgoCD sync completed." }
+    failure { echo "❌ ArgoCD sync failed." }
   }
 }
