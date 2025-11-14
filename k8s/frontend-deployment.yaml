@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: frontend
-  namespace: webapp
+  namespace: myapp
 spec:
   replicas: 1
   selector:
@@ -20,5 +20,5 @@ spec:
           ports:
             - containerPort: 80
           env:
-        - name: REACT_APP_API_BASE
-          value: "/api"
+            - name: REACT_APP_API_BASE
+              value: "/api"
