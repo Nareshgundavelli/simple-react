@@ -13,7 +13,7 @@ pipeline {
     GIT_CRED_ID      = 'git_access_cred'
     GIT_USER_NAME    = 'Nareshgundavelli'
     GIT_USER_EMAIL   = 'nareshgundavelli09@gmail.com'
-    ARGOCD_SERVER    = 'https://192.168.49.2:30587'
+    ARGOCD_SERVER    = 'http://localhost:30210'
     ARGOCD_APP_NAME  = 'simple-react'
     ARGOCD_TOKEN_ID  = 'argocd-token'
   }
