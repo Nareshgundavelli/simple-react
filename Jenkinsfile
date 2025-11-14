@@ -23,7 +23,7 @@ pipeline {
     stage('Checkout Source') {
       steps {
         echo "🔄 Checking out main branch..."
-        git branch: 'main', url: 'https://github.com/Nareshgundavelli/kubernetes-.git'
+        git branch: 'main', url: 'https://github.com/Nareshgundavelli/simple-react.git'
       }
     }
 
@@ -94,7 +94,7 @@ pipeline {
               git config user.email "$GIT_USER_EMAIL"
               git add ${K8S_MANIFEST_DIR}/*.yaml
               git commit -m "chore: update images to v${APP_VERSION}" || echo "No changes to commit"
-              git push https://$GIT_USER:$GIT_PASS@github.com/Nareshgundavelli/kubernetes-.git main
+              git push https://$GIT_USER:$GIT_PASS@hgithub.com/Nareshgundavelli/simple-react.git main
             '''
           }
         }
