@@ -2,6 +2,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: react-node-ingress
+  namespace: myapp
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /$1
 spec:
@@ -24,4 +25,3 @@ spec:
             name: backend-service
             port:
               number: 5000
-

@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: frontend
+  namespace: webapp
 spec:
   replicas: 1
   selector:
@@ -15,5 +16,9 @@ spec:
       containers:
         - name: frontend
           image: nareshgundavelli/simple-react:frontend-1.0.0
+          imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 5173
+            - containerPort: 80
+          env:
+        - name: REACT_APP_API_BASE
+          value: "/api"
