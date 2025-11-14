@@ -1,5 +1,10 @@
 pipeline {
-  agent any
+  agent {
+    docker {
+      image 'bitnami/kubectl:latest' // has kubectl, you can extend it to include docker CLI
+      args '-v /var/run/docker.sock:/var/run/docker.sock'
+    }
+  }
 
   environment {
     DOCKER_REPO      = 'nareshgundavelli/simple-react'
@@ -11,7 +16,6 @@ pipeline {
     ARGOCD_SERVER    = 'http://localhost:30210'
     ARGOCD_APP_NAME  = 'simple-react'
     ARGOCD_TOKEN_ID  = 'argocd-token'
-    KUBECONFIG_ID    = 'kubeconfig-creds'
     FRONTEND_SERVICE = 'frontend'
     BACKEND_SERVICE  = 'backend'
   }
@@ -28,23 +32,18 @@ pipeline {
     stage('Detect Changes & Read Version') {
       steps {
         script {
-          echo "🔍 Detecting changes and reading version..."
           def frontendChanged = sh(script: "git diff --name-only HEAD~1 HEAD | grep '^frontend/' || true", returnStdout: true).trim()
           def backendChanged  = sh(script: "git diff --name-only HEAD~1 HEAD | grep '^backend/' || true", returnStdout: true).trim()
           env.FRONTEND_CHANGED = frontendChanged ? "true" : "false"
           env.BACKEND_CHANGED  = backendChanged ? "true" : "false"
-          
           def pkg = readJSON file: 'frontend/package.json'
           env.APP_VERSION = pkg.version
-
-          echo "📦 Frontend changed: ${env.FRONTEND_CHANGED}"
-          echo "📦 Backend changed: ${env.BACKEND_CHANGED}"
-          echo "📦 App version: ${env.APP_VERSION}"
         }
       }
     }
 
     stage('Build & Push Docker Images') {
+      when { expression { env.FRONTEND_CHANGED == "true" || env.BACKEND_CHANGED == "true" } }
       steps {
         script {
           withCredentials([usernamePassword(credentialsId: env.DOCKER_CRED_ID, usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
@@ -52,13 +51,11 @@ pipeline {
               echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
               
               if [ "$FRONTEND_CHANGED" = "true" ]; then
-                echo "🚀 Building Frontend image..."
                 docker build -t ${DOCKER_REPO}:frontend-${APP_VERSION} ./frontend
                 docker push ${DOCKER_REPO}:frontend-${APP_VERSION}
               fi
-              
+
               if [ "$BACKEND_CHANGED" = "true" ]; then
-                echo "🚀 Building Backend image..."
                 docker build -t ${DOCKER_REPO}:backend-${APP_VERSION} ./backend
                 docker push ${DOCKER_REPO}:backend-${APP_VERSION}
               fi
@@ -93,42 +90,21 @@ pipeline {
       }
     }
 
-    stage('Deploy to Cluster') {
-      parallel {
-        stage('Via ArgoCD') {
-          when { expression { env.ARGOCD_TOKEN_ID != null } }
-          steps {
-            withCredentials([string(credentialsId: env.ARGOCD_TOKEN_ID, variable: 'ARGO_TOKEN')]) {
-              sh '''
-                echo "🚀 Triggering ArgoCD sync for $ARGOCD_APP_NAME..."
-                argocd login $ARGOCD_SERVER --grpc-web --username admin --password "$ARGO_TOKEN" --insecure || true
-                argocd app sync $ARGOCD_APP_NAME --server $ARGOCD_SERVER --grpc-web --auth-token "$ARGO_TOKEN" --insecure || true
-                argocd app wait $ARGOCD_APP_NAME --server $ARGOCD_SERVER --grpc-web --auth-token "$ARGO_TOKEN" --insecure --health --timeout 300 || true
-              '''
-            }
-          }
-        }
-
-        stage('Direct kubectl Deployment') {
-          when { expression { env.KUBECONFIG_ID != null } }
-          steps {
-            withCredentials([file(credentialsId: env.KUBECONFIG_ID, variable: 'KUBECONFIG_FILE')]) {
-              sh '''
-                kubectl --kubeconfig=$KUBECONFIG_FILE apply -f k8s/namespace.yaml
-                kubectl --kubeconfig=$KUBECONFIG_FILE apply -n demo-app -f k8s/backend-deployment.yaml
-                kubectl --kubeconfig=$KUBECONFIG_FILE apply -n demo-app -f k8s/frontend-deployment.yaml
-                kubectl --kubeconfig=$KUBECONFIG_FILE apply -n demo-app -f k8s/backend-service.yaml -f k8s/frontend-service.yaml -f k8s/ingress.yaml
-              '''
-            }
-          }
+    stage('Deploy via ArgoCD') {
+      steps {
+        withCredentials([string(credentialsId: env.ARGOCD_TOKEN_ID, variable: 'ARGO_TOKEN')]) {
+          sh '''
+            argocd login $ARGOCD_SERVER --grpc-web --username admin --password "$ARGO_TOKEN" --insecure || true
+            argocd app sync $ARGOCD_APP_NAME --server $ARGOCD_SERVER --grpc-web --auth-token "$ARGO_TOKEN" --insecure || true
+            argocd app wait $ARGOCD_APP_NAME --server $ARGOCD_SERVER --grpc-web --auth-token "$ARGO_TOKEN" --insecure --health --timeout 300 || true
+          '''
         }
       }
     }
-
   }
 
   post {
-    success { echo "✅ Deployment completed successfully." }
-    failure { echo "❌ Deployment failed." }
+    success { echo "✅ Pipeline completed successfully." }
+    failure { echo "❌ Pipeline failed." }
   }
 }
