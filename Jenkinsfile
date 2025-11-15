@@ -92,7 +92,6 @@ pipeline {
                     )]) {
 
                         sh '''
-                            export PATH=/usr/bin:/usr/local/bin:$PATH
 
                             echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
 
