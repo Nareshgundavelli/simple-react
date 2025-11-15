@@ -92,7 +92,9 @@ pipeline {
                     )]) {
 
                         sh '''
-
+                    
+                            docker version
+                            docker ps
                             echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
 
                             if [ "$FRONTEND_CHANGED" = "true" ]; then
