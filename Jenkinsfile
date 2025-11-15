@@ -59,23 +59,23 @@ pipeline {
         /**********************
          VERIFY DOCKER ACCESS
         ***********************/
-        stage('Verify Docker Access') {
-            steps {
-                sh '''
-                    export PATH=/usr/bin:/usr/local/bin:$PATH
+        // stage('Verify Docker Access') {
+        //     steps {
+        //         sh '''
+        //             export PATH=/usr/bin:/usr/local/bin:$PATH
 
-                    echo "🧪 Checking Docker..."
-                    which docker
-                    docker --version
+        //             echo "🧪 Checking Docker..."
+        //             which docker
+        //             docker --version
 
-                    echo "🧪 Checking socket..."
-                    ls -l /var/run/docker.sock || true
+        //             echo "🧪 Checking socket..."
+        //             ls -l /var/run/docker.sock || true
 
-                    echo "🧪 Checking docker ps..."
-                    docker ps || true
-                '''
-            }
-        }
+        //             echo "🧪 Checking docker ps..."
+        //             docker ps || true
+        //         '''
+        //     }
+        // }
 
         /**********************
          BUILD & PUSH IMAGES
