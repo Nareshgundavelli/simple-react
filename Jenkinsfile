@@ -18,11 +18,9 @@ pipeline {
 
     stages {
 
-        /********************************************************
-         NO MORE “Ensure Docker CLI”
-         Docker CLI must already exist inside Jenkins image.
-        ********************************************************/
-
+        /**********************
+         CHECKOUT SOURCE
+        ***********************/
         stage('Checkout Source') {
             steps {
                 echo "🔄 Checking out repository..."
@@ -30,10 +28,12 @@ pipeline {
             }
         }
 
+        /**********************
+         DETECT CHANGES + VERSION
+        ***********************/
         stage('Detect Changes & Version') {
             steps {
                 script {
-                    // Prevent failure if HEAD~1 does not exist (first commit build)
                     sh "git rev-parse HEAD~1 || true"
 
                     def diff = sh(
@@ -44,23 +44,47 @@ pipeline {
                     echo "Changed files:\n${diff}"
 
                     env.FRONTEND_CHANGED = diff.contains("frontend/") ? "true" : "false"
-                    env.BACKEND_CHANGED  = diff.contains("backend/") ? "true" : "false"
+                    env.BACKEND_CHANGED  = diff.contains("backend/")  ? "true" : "false"
 
-                    // Read version from package.json
                     def pkg = readJSON file: 'frontend/package.json'
                     env.APP_VERSION = pkg.version
 
                     echo "Frontend changed: ${env.FRONTEND_CHANGED}"
-                    echo "Backend changed: ${env.BACKEND_CHANGED}"
-                    echo "App version: ${env.APP_VERSION}"
+                    echo "Backend changed:  ${env.BACKEND_CHANGED}"
+                    echo "App version:      ${env.APP_VERSION}"
                 }
             }
         }
 
+        /**********************
+         VERIFY DOCKER ACCESS
+        ***********************/
+        stage('Verify Docker Access') {
+            steps {
+                sh '''
+                    export PATH=/usr/bin:/usr/local/bin:$PATH
+
+                    echo "🧪 Checking Docker..."
+                    which docker
+                    docker --version
+
+                    echo "🧪 Checking socket..."
+                    ls -l /var/run/docker.sock || true
+
+                    echo "🧪 Checking docker ps..."
+                    docker ps || true
+                '''
+            }
+        }
+
+        /**********************
+         BUILD & PUSH IMAGES
+        ***********************/
         stage('Build & Push Docker Images') {
             when { expression { env.FRONTEND_CHANGED == "true" || env.BACKEND_CHANGED == "true" } }
             steps {
                 script {
+
                     withCredentials([usernamePassword(
                         credentialsId: env.DOCKER_CRED_ID,
                         usernameVariable: 'DOCKER_USER',
@@ -68,14 +92,18 @@ pipeline {
                     )]) {
 
                         sh '''
+                            export PATH=/usr/bin:/usr/local/bin:$PATH
+
                             echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
 
                             if [ "$FRONTEND_CHANGED" = "true" ]; then
+                                echo "🚀 Building FRONTEND image..."
                                 docker build -t ${DOCKER_REPO}:frontend-${APP_VERSION} ./frontend
                                 docker push ${DOCKER_REPO}:frontend-${APP_VERSION}
                             fi
 
                             if [ "$BACKEND_CHANGED" = "true" ]; then
+                                echo "🚀 Building BACKEND image..."
                                 docker build -t ${DOCKER_REPO}:backend-${APP_VERSION} ./backend
                                 docker push ${DOCKER_REPO}:backend-${APP_VERSION}
                             fi
@@ -87,6 +115,9 @@ pipeline {
             }
         }
 
+        /**********************
+         UPDATE K8S MANIFESTS
+        ***********************/
         stage('Update K8s Manifests') {
             when { expression { env.FRONTEND_CHANGED == "true" || env.BACKEND_CHANGED == "true" } }
             steps {
@@ -94,14 +125,14 @@ pipeline {
                     if (env.FRONTEND_CHANGED == "true") {
                         sh """
                             yq e -i '.spec.template.spec.containers[0].image = "${DOCKER_REPO}:frontend-${APP_VERSION}"' \
-                            ${K8S_MANIFEST_DIR}/frontend-deployment.yaml
+                               ${K8S_MANIFEST_DIR}/frontend-deployment.yaml
                         """
                     }
 
                     if (env.BACKEND_CHANGED == "true") {
                         sh """
                             yq e -i '.spec.template.spec.containers[0].image = "${DOCKER_REPO}:backend-${APP_VERSION}"' \
-                            ${K8S_MANIFEST_DIR}/backend-deployment.yaml
+                               ${K8S_MANIFEST_DIR}/backend-deployment.yaml
                         """
                     }
 
@@ -116,7 +147,7 @@ pipeline {
                             git config user.email "$GIT_USER_EMAIL"
 
                             git add k8s/*.yaml
-                            git commit -m "update images to v${APP_VERSION}" || echo "No changes"
+                            git commit -m "Update images to v${APP_VERSION}" || echo "No changes to commit"
                             git push https://$GIT_USER:$GIT_PASS@github.com/Nareshgundavelli/simple-react.git main
                         '''
                     }
@@ -124,18 +155,28 @@ pipeline {
             }
         }
 
+        /**********************
+         ArgoCD DEPLOYMENT
+        ***********************/
         stage('Deploy via ArgoCD') {
             steps {
                 withCredentials([string(credentialsId: env.ARGOCD_TOKEN_ID, variable: 'ARGO_TOKEN')]) {
                     sh '''
-                        argocd login $ARGOCD_SERVER --grpc-web --username admin --password "$ARGO_TOKEN" --insecure || true
+                        echo "🔐 Logging into ArgoCD..."
 
+                        argocd login $ARGOCD_SERVER --grpc-web \
+                            --username admin --password "$ARGO_TOKEN" --insecure || true
+
+                        echo "🚀 Syncing application..."
                         argocd app sync $ARGOCD_APP_NAME \
-                          --server $ARGOCD_SERVER --grpc-web --auth-token "$ARGO_TOKEN" --insecure || true
+                            --server $ARGOCD_SERVER --grpc-web \
+                            --auth-token "$ARGO_TOKEN" --insecure || true
 
+                        echo "⏳ Waiting for healthy state..."
                         argocd app wait $ARGOCD_APP_NAME \
-                          --server $ARGOCD_SERVER --grpc-web --auth-token "$ARGO_TOKEN" \
-                          --insecure --health --timeout 300 || true
+                            --server $ARGOCD_SERVER --grpc-web \
+                            --auth-token "$ARGO_TOKEN" \
+                            --insecure --health --timeout 300 || true
                     '''
                 }
             }
