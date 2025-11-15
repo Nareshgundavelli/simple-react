@@ -124,23 +124,7 @@ pipeline {
             }
         }
 
-        stage('Deploy via ArgoCD') {
-            steps {
-                withCredentials([string(credentialsId: env.ARGOCD_TOKEN_ID, variable: 'ARGO_TOKEN')]) {
-                    sh '''
-                        argocd login $ARGOCD_SERVER --grpc-web --username admin --password "$ARGO_TOKEN" --insecure || true
-
-                        argocd app sync $ARGOCD_APP_NAME \
-                          --server $ARGOCD_SERVER --grpc-web --auth-token "$ARGO_TOKEN" --insecure || true
-
-                        argocd app wait $ARGOCD_APP_NAME \
-                          --server $ARGOCD_SERVER --grpc-web --auth-token "$ARGO_TOKEN" \
-                          --insecure --health --timeout 300 || true
-                    '''
-                }
-            }
-        }
-
+        
     }
 
     post {
