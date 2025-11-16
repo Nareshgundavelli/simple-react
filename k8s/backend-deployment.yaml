@@ -15,6 +15,6 @@ spec:
     spec:
       containers:
         - name: backend
-          image: nareshgundavelli/simple-react:backend-1.0.0
+          image: nareshgundavelli/simple-react:backend-1.1.2
           ports:
             - containerPort: 5000

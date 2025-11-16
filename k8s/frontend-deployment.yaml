@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: nareshgundavelli/simple-react:frontend-1.0.0
+          image: nareshgundavelli/simple-react:frontend-1.1.2
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80
