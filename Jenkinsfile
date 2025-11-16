@@ -11,8 +11,8 @@ pipeline {
         GIT_USER_NAME    = 'Nareshgundavelli'
         GIT_USER_EMAIL   = 'nareshgundavelli09@gmail.com'
 
-        ARGOCD_SERVER    = 'http://localhost:9090'
-        ARGOCD_APP_NAME  = 'simple-react'
+        ARGOCD_SERVER    = 'http://192.168.49.2:30587'
+        ARGOCD_APP_NAME  = 'react'
         ARGOCD_TOKEN_ID  = 'argocd-token'
     }
 
@@ -149,7 +149,7 @@ pipeline {
     }
 
     post {
-        success { echo "✅ Pipeline completed successfully." }
+        success { echo "✅  success." }
         failure { echo "❌ Pipeline failed." }
     }
 }
