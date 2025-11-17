@@ -6,20 +6,23 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: https://naresh.living
+    - host: naresh.living
       http:
         paths:
-          - path: /login
-            pathType: ImplementationSpecific
-            backend:
-              service:
-                name: backend-service
-                port:
-                  number: 5000
           - path: /
-            pathType: ImplementationSpecific
+            pathType: Prefix
             backend:
               service:
                 name: frontend-service
                 port:
                   number: 80
+    - host: naresh.living
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: backend-service
+                port:
+                  number: 5000
