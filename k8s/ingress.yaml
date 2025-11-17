@@ -9,6 +9,7 @@ spec:
     - host: naresh.living
       http:
         paths:
+          # Frontend (React)
           - path: /
             pathType: Prefix
             backend:
@@ -16,10 +17,9 @@ spec:
                 name: frontend-service
                 port:
                   number: 80
-    - host: naresh.living
-      http:
-        paths:
-          - path: /
+
+          # Backend (Node)
+          - path: /api
             pathType: Prefix
             backend:
               service:
