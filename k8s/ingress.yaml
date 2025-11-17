@@ -2,23 +2,21 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: react-node-ingress
-  namespace: myapp
-  annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /$1
+  namespace: app-ns
 spec:
   ingressClassName: nginx
   rules:
-    - host: react.local
+    - host: naresh.living
       http:
         paths:
-          - path: /api(/|$)(.*)
+          - path: /api
             pathType: ImplementationSpecific
             backend:
               service:
                 name: backend-service
                 port:
                   number: 5000
-          - path: /(.*)
+          - path: /
             pathType: ImplementationSpecific
             backend:
               service:
